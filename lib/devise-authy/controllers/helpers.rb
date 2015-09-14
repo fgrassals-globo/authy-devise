@@ -49,7 +49,7 @@ module DeviseAuthy
         Rails.logger.warn warden.session(resource_name).fetch(:with_required_authy_authentication)
         Rails.logger.warn warden.session(resource_name).fetch(:with_authy_authentication)
         Rails.logger.warn signed_in?(resource_name)
-        if signed_in?(resource_name) && warden.session(resource_name)[:with_requried_authy_authentication]
+        if signed_in?(resource_name) && warden.session(resource_name).fetch(:with_requried_authy_authentication)
           #session["redirect_to_enable_authy_path_for"] = 1
           Rails.logger.warn "redirect_to_enable_authy_path_for"
           redirect_to enable_authy_path_for(resource_name)
