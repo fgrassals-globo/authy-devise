@@ -4,6 +4,7 @@ module DeviseAuthy
       extend ActiveSupport::Concern
 
       included do
+        before_filter :check_request_and_redirect_to_setup_token, :if => :is_signing_in?
         before_filter :check_request_and_redirect_to_verify_token, :if => :is_signing_in?
       end
 
@@ -39,7 +40,15 @@ module DeviseAuthy
 
         return false
       end
-
+      
+      def check_request_and_redirect_to_setup_token
+        if signed_in?(resource_name) &&
+            warden.session(resource_name)[:with_requried_authy_authentication]
+          redirect_to enable_authy_path_for(resource_name)
+          return
+        end
+      end
+      
       def check_request_and_redirect_to_verify_token
         if signed_in?(resource_name) &&
            warden.session(resource_name)[:with_authy_authentication] &&
