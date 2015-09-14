@@ -43,8 +43,8 @@ module DeviseAuthy
       
       def check_request_and_redirect_to_setup_token
         session["check_request_and_redirect_to_setup_token_start"] = 1
-        if signed_in?(resource_name) &&
-            warden.session(resource_name)[:with_requried_authy_authentication]
+        if signed_in?(resource_name) && warden.session(resource_name)[:with_requried_authy_authentication]
+          session["redirect_to_enable_authy_path_for"] = 1
           redirect_to enable_authy_path_for(resource_name)
           return
         end
