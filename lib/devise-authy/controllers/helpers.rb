@@ -44,7 +44,8 @@ module DeviseAuthy
       def check_request_and_redirect_to_setup_token
         Rails.logger.warn "check_request_and_redirect_to_setup_token"
         Rails.logger.warn warden.session(resource_name).inspect
-        Rails.logger.warn warden.session(resource_name)[:with_requried_authy_authentication]
+        Rails.logger.warn warden.session(resource_name)[:with_required_authy_authentication]
+        Rails.logger.warn warden.session(resource_name)[:with_authy_authentication]
         Rails.logger.warn signed_in?(resource_name)
         if signed_in?(resource_name) && warden.session(resource_name)[:with_requried_authy_authentication]
           #session["redirect_to_enable_authy_path_for"] = 1
