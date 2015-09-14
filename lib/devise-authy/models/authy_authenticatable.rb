@@ -12,6 +12,15 @@ module Devise
         return false
       end
 
+      def with_required_authy_authentication?(request)
+        if !self.authy_id.present? && !self.authy_enabled && self.authy_required
+          return true
+        end
+
+        return false
+      end
+
+
       module ClassMethods
         def find_by_authy_id(authy_id)
           find(:first, :conditions => {:authy_id => authy_id})
