@@ -4,27 +4,31 @@ module DeviseAuthy
       extend ActiveSupport::Concern
 
       included do
-        before_filter :check_request_and_redirect_to_setup_token, :if => :is_signing_in?
-        before_filter :check_request_and_redirect_to_verify_token, :if => :is_signing_in?
+        before_action :check_request_and_redirect_to_setup_token, :if => :is_signing_in?
+        before_action :check_request_and_redirect_to_verify_token, :if => :is_signing_in?
       end
 
       private
       def remember_device
+        id = @resource.id
         cookies.signed[:remember_device] = {
-          :value => Time.now.to_i,
+          :value => {expires: Time.now.to_i, id: id}.to_json,
           :secure => !(Rails.env.test? || Rails.env.development?),
           :expires => resource_class.authy_remember_device.from_now
         }
       end
 
       def require_token?
-        if cookies.signed[:remember_device].present? &&
-          (Time.now.to_i - cookies.signed[:remember_device].to_i) < \
-          resource_class.authy_remember_device.to_i
-          return false
-        end
+        id = warden.session(resource_name)[:id]
+        cookie = cookies.signed[:remember_device]
+        return true if cookie.blank?
 
-        return true
+        # require token for old cookies which just have expiration time and no id
+        return true if cookie.to_s =~ %r{\A\d+\z}
+
+        cookie = JSON.parse(cookie) rescue ""
+        return cookie.blank? || (Time.now.to_i - cookie['expires'].to_i) > \
+               resource_class.authy_remember_device.to_i || cookie['id'] != id
       end
 
       def is_devise_sessions_controller?
@@ -67,8 +71,7 @@ module DeviseAuthy
 
           remember_me = (params.fetch(resource_name, {})[:remember_me].to_s == "1")
           return_to = session["#{resource_name}_return_to"]
-          warden.logout
-          warden.reset_session! # make sure the session resetted
+          sign_out
 
           session["#{resource_name}_id"] = id
           # this is safe to put in the session because the cookie is signed

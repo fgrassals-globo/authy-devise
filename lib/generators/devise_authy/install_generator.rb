@@ -13,7 +13,14 @@ module DeviseAuthy
         inject_into_file "config/initializers/devise.rb", "\n" +
         "  # ==> Devise Authy Authentication Extension\n" +
         "  # How long should the user's device be remembered for.\n" +
-        "  # config.authy_remember_device = 1.month\n\n", :before => /^end[\r\n]*$/
+        "  # config.authy_remember_device = 1.month\n\n", :after => "Devise.setup do |config|\n"
+      end
+
+      def add_initializer
+        initializer("authy.rb") do
+          "Authy.api_key = ENV[\"AUTHY_API_KEY\"]\n" \
+          "Authy.api_uri = \"https://api.authy.com/\""
+        end
       end
 
       def copy_locale
@@ -48,7 +55,6 @@ module DeviseAuthy
             :content => %@
     =javascript_include_tag "https://www.authy.com/form.authy.min.js"
     =stylesheet_link_tag "https://www.authy.com/form.authy.min.css"
-    =javascript_include_tag "devise_authy.js"
 @
           },
           :erb => {
@@ -56,12 +62,11 @@ module DeviseAuthy
             :content => %@
   <%=javascript_include_tag "https://www.authy.com/form.authy.min.js" %>
   <%=stylesheet_link_tag "https://www.authy.com/form.authy.min.css" %>
-  <%=javascript_include_tag "devise_authy.js" %>
 @
           }
         }.each do |extension, opts|
           file_path = "app/views/layouts/application.html.#{extension}"
-          if File.exists?(file_path) && !File.read(file_path).include?("devise_authy.js")
+          if File.exists?(file_path) && !File.read(file_path).include?("form.authy.min.js")
             inject_into_file(file_path, opts.delete(:content), opts)
           end
         end

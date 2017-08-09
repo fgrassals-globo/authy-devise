@@ -1,11 +1,11 @@
 class Devise::DeviseAuthyController < DeviseController
-  prepend_before_filter :find_resource, :only => [
-    :request_sms
+  prepend_before_action :find_resource, :only => [
+    :request_phone_call, :request_sms
   ]
-  prepend_before_filter :find_resource_and_require_password_checked, :only => [
+  prepend_before_action :find_resource_and_require_password_checked, :only => [
     :GET_verify_authy, :POST_verify_authy
   ]
-  prepend_before_filter :authenticate_scope!, :only => [
+  prepend_before_action :authenticate_scope!, :only => [
     :GET_enable_authy, :POST_enable_authy,
     :GET_verify_authy_installation, :POST_verify_authy_installation,
     :POST_disable_authy
@@ -27,6 +27,8 @@ class Devise::DeviseAuthyController < DeviseController
 
     if token.ok?
       @resource.update_attribute(:last_sign_in_with_authy, DateTime.now)
+
+      session["#{resource_name}_authy_token_checked"] = true
 
       remember_device if params[:remember_device].to_i == 1
       if session.delete("#{resource_name}_remember_me") == true && @resource.respond_to?(:remember_me=)
@@ -87,7 +89,7 @@ class Devise::DeviseAuthyController < DeviseController
       set_flash_message(:error, :not_disabled)
     end
 
-    redirect_to root_path
+    redirect_to after_authy_disabled_path_for(resource)
   end
 
   def GET_verify_authy_installation
@@ -103,12 +105,22 @@ class Devise::DeviseAuthyController < DeviseController
 
     self.resource.authy_enabled = token.ok?
 
-    if !token.ok? || !self.resource.save
-      handle_invalid_token :verify_authy_installation, :not_enabled
-    else
+    if token.ok? && self.resource.save
       set_flash_message(:notice, :enabled)
       redirect_to after_authy_verified_path_for(resource)
+    else
+      handle_invalid_token :verify_authy_installation, :not_enabled
     end
+  end
+
+  def request_phone_call
+    unless @resource
+      render :json => { :sent => false, :message => "User couldn't be found." }
+      return
+    end
+
+    response = Authy::API.request_phone_call(:id => @resource.authy_id, :force => true)
+    render :json => { :sent => response.ok?, :message => response.message }
   end
 
   def request_sms
@@ -153,6 +165,10 @@ class Devise::DeviseAuthyController < DeviseController
 
   def after_authy_verified_path_for(resource)
     after_authy_enabled_path_for(resource)
+  end
+
+  def after_authy_disabled_path_for(resource)
+    root_path
   end
 
   def invalid_resource_path
