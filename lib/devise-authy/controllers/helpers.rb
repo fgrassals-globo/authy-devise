@@ -4,8 +4,8 @@ module DeviseAuthy
       extend ActiveSupport::Concern
 
       included do
-        before_action :check_request_and_redirect_to_setup_token, :if => :is_signing_in?
-        before_action :check_request_and_redirect_to_verify_token, :if => :is_signing_in?
+        # before_action :check_request_and_redirect_to_setup_token, :if => :is_signing_in?
+        # before_action :check_request_and_redirect_to_verify_token, :if => :is_signing_in?
       end
 
       private
